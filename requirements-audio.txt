@@ -1,2 +1,2 @@
+# Qwen ASR / Next HTTP 使用 Python 标准库，无额外依赖。
 -r requirements.txt
-faster-whisper>=1.1,<2

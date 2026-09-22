@@ -1,35 +1,10 @@
-"""给新音频产生词级时间戳；这不是自动校对或最终字幕。"""
+"""兼容旧入口：词级对齐仍使用可选的本地 Whisper；Qwen 转写用 asr_qwen.py。"""
 
-import argparse, json
+import runpy
 from pathlib import Path
 
-p = argparse.ArgumentParser(description=__doc__)
-p.add_argument("audio", type=Path)
-p.add_argument("--output", type=Path, required=True)
-p.add_argument("--model", default="small")
-a = p.parse_args()
-from faster_whisper import WhisperModel
-
-m = WhisperModel(a.model, device="cpu", compute_type="int8", cpu_threads=4)
-segments, _ = m.transcribe(
-    str(a.audio),
-    language="zh",
-    word_timestamps=True,
-    condition_on_previous_text=False,
-    vad_filter=True,
-)
-data = []
-for s in segments:
-    data.append(
-        {
-            "start": s.start,
-            "end": s.end,
-            "text": s.text,
-            "words": [
-                {"text": w.word, "start": w.start, "end": w.end} for w in s.words or []
-            ],
-        }
+if __name__ == "__main__":
+    print("词级对齐入口；Qwen ASR 转写请使用 scripts/asr_qwen.py。")
+    runpy.run_path(
+        str(Path(__file__).with_name("align_whisper.py")), run_name="__main__"
     )
-a.output.parent.mkdir(parents=True, exist_ok=True)
-a.output.write_text(json.dumps(data, ensure_ascii=False, indent=2))
-print(a.output)
