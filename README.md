@@ -1,0 +1,122 @@
+# 中文科普视频工作室
+
+把两次实际制作的 Jev 科普视频整理成一个可复用工程：一分钟版与三分钟版、原始创作提示词、时间轴、渲染代码、中文制作方法，以及给 Agent 使用的 Skill。
+
+这是一套已经跑通的制作流程和两份实例，不是输入任意题目就自动产出同等质量视频的万能模板。新主题仍需要重新调研、写稿与设计画面。
+
+## 两个实例
+
+| 实例 | 时长 | 画面风格 | 内容 |
+|---|---:|---|---|
+| `jev_60s` | 60.48 秒 | 深蓝底 | 状态、判断、执行、Agent 分流、掉坑反例 |
+| `jev_3min` | 188.08 秒 | 深蓝与米白交替，保留已确认的设计 | 增加三类判断、上下文分支、置信度与测试办法 |
+
+两个实例均输出 1920×1080、30fps、H.264/AAC；字幕使用实际配音时间轴。游戏为原创教学动画，并非 Jev 实测录像。
+
+## 快速开始
+
+需要 Python 3.10+ 和可从终端执行的 FFmpeg / FFprobe。
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+先生成截图，无需 API Key 或音频：
+
+```bash
+python scripts/render.py jev_60s --still 26
+python scripts/render.py jev_3min --still 149.9
+```
+
+输出在 `outputs/实例名/`。仓库不存放私人参考人声、生成音轨与视频；字体及其许可证随仓库提供。
+
+### 复现已交付的视频
+
+从此前交付的完整工程 ZIP 导入音轨：
+
+```bash
+python scripts/import_audio.py jev_60s /你的路径/jev_source.zip
+python scripts/import_audio.py jev_3min /你的路径/jev_3min_source.zip
+python scripts/render.py jev_60s
+python scripts/render.py jev_3min
+```
+
+也可以把对应音轨放到 `local_media/jev_60s/master.wav`、`local_media/jev_3min/master.wav`，或传入 `--audio /路径/master.wav`。
+
+快速检查一小段：
+
+```bash
+python scripts/render.py jev_3min --start 143 --duration 8 --width 960
+```
+
+没有音轨时脚本会明确报错，不会偷偷调用 TTS。起点和时长控制片段范围，width 控制输出宽度，均不改变口播速度。
+
+## 使用 Next 生成新配音
+
+在当前终端设置环境变量；不要把真实值写进代码、文档或 Git 提交：
+
+```bash
+export DASHSCOPE_API_KEY='在本机填入你的密钥'
+export SFM_WORKSPACE_ID='在本机填入你的业务空间ID'
+```
+
+`.env.example` 只说明变量，脚本不自动加载 `.env`。旧变量 `WORKSPACE_ID` 也支持，优先用 `SFM_WORKSPACE_ID`。
+
+把参考音放到 `local_media/reference.wav`，再调用：
+
+```bash
+python scripts/tts_next.py \
+  --prompt examples/jev_60s/prompts/narration.txt \
+  --reference local_media/reference.wav \
+  --run my_voice_01
+```
+
+这是会调用在线生成接口的命令。每次新的 `--run` 只提交一次生成请求，不自动重试。若生成已成功、下载失败，使用相同运行名和 `--resume` 只继续下载，不重复生成。原始响应可能包含临时地址，只存在被忽略的 `runs/` 目录。
+
+新配音不能直接套用旧时间轴。安装可选依赖后获取词级定位：
+
+```bash
+python -m pip install -r requirements-audio.txt
+python scripts/align_audio.py runs/my_voice_01/master.wav --output runs/my_voice_01/transcript.json
+```
+
+首次会下载识别模型。转写须与原稿核对，特别是英文与同音词。根据核对后的时间安排字幕和动画，再渲染；这一步没有伪装成全自动。
+
+## 项目结构
+
+```text
+examples/       两个视频的画面、口播、提示词、字幕、时间轴与事实依据
+scripts/        共用的生成、导入、转写、渲染和提交检查入口
+skills/         Agent 可读取的科普视频制作 Skill
+assets/fonts/   中文字体与原许可证
+docs/          中文流程、复盘和验收说明
+local_media/    本地音轨与参考音，不提交
+runs/           API 运行数据，不提交
+outputs/        截图与成片，不提交
+```
+
+## 给 Agent 使用
+
+读 `skills/science-video-production/SKILL.md`，按该 Skill 处理主题。它沉淀制作方法与失败经验，不固定新主题必须使用 Jev 的格子游戏，也不要求把每期都做成卡片。
+
+仓库中包含 Skill 文件，不代表已自动安装到 ChatGPT 的个人 Skill 列表。
+
+- [制作流程](docs/制作流程.md)
+- [这两次制作的复盘](docs/制作复盘.md)
+- [验收办法](docs/验收办法.md)
+- [开发与复现](docs/开发与复现.md)
+
+## 提交前检查
+
+```bash
+git config core.hooksPath .githooks
+git add .
+python scripts/check_repo.py
+python -m unittest discover -s tests
+```
+
+`.gitignore` 排除密钥配置、媒体、缓存与原始响应；检查脚本读取暂存内容，而不是只看工作目录。规则检查不是完整的秘密识别系统，推送前仍应查看 `git diff --cached --stat` 和具体变更。不要使用 `git add -f` 加回这些文件。
+
+代码尚未指定开源许可证；字体按 `assets/fonts/LICENSE.txt` 的许可分发。是否公开仓库、是否另加代码许可证，由仓库所有者决定。
