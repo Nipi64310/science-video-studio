@@ -31,7 +31,7 @@
 
 1. **资料与口播**：核对官方资料，把核心问题写成自然中文，再拆成逐镜分镜。
 2. **生成声音**：Qwen-Audio-3.1-TTS-Next 根据脚本和已选定参考音生成配音。一分钟版一次生成；三分钟版采用三段声音，异常段单独重做。
-3. **对齐字幕**：Qwen ASR 入口负责台词转写核对（当前接入测试状态见下文）；词级定位保留可选的本地对齐工具。两个示例制作时使用 faster-whisper 对齐，字幕和动画读取同一份时间轴。
+3. **对齐字幕**：默认使用 Qwen Filetrans 获取转写及句级、词级时间戳，再按原稿校对。两个示例制作时使用 faster-whisper 对齐，字幕和动画读取同一份时间轴。
 4. **代码画动画**：Python + Pillow 按时间绘制角色移动、选项、状态卡片、概率条和路由图，中文字体随项目提供。
 5. **合成与验收**：FFmpeg 编码 H.264/AAC，输出 1080p、30fps；检查字幕、排版、动作顺序、音量和完整解码。
 
@@ -105,29 +105,36 @@ python scripts/tts_next.py \
 
 这是会调用在线生成接口的命令。每次新的 `--run` 只提交一次生成请求，不自动重试。若生成已成功、下载失败，使用相同运行名和 `--resume` 只继续下载，不重复生成。原始响应可能包含临时地址，只存在被忽略的 `runs/` 目录。
 
-### Qwen ASR 核对台词
+### Qwen Filetrans 转写与字幕定位
 
-转写入口使用 `qwen-audio-3.1-asr-flash-message`，认证读取同一个 `DASHSCOPE_API_KEY`，无需安装 Whisper：
+默认使用已实测成功的 `qwen-audio-3.1-asr-flash-filetrans`，读取同一个 `DASHSCOPE_API_KEY`，无需安装 Whisper：
 
 ```bash
 python scripts/asr_qwen.py \
   --response-file runs/my_voice_01/response_private.json \
-  --sample-rate 48000 \
-  --output runs/my_voice_01/transcript.json
+  --run-dir runs/asr_01
 ```
 
-也可传 `--audio-url`，必须是服务端可访问的 WAV 地址。采样率填写音频真实值；参数本身不会重采样。默认沿用接入示例的 `input_audio` 结构；`--protocol dashscope` 用通用文档的 `audio` 结构，不会失败后自动切换或重试。
+也可用 `--audio-url` 指定服务端可访问的音频地址。本地路径不直接上传；Next 原始下载地址可从缓存响应读取，需在有效期内使用。
 
-**接入状态：已加入代码，尚未跑通。** 实测该模型返回 HTTP 400 / `InvalidParameter` / `url error`，尚未取得有效转写和时间戳。请求差异与记录见 [Qwen ASR 接入](docs/Qwen-ASR接入.md)。不能把纯文字识别当成字幕对齐。
+脚本提交一次异步任务，保存 task_id 后查询结果；默认等待最多 300 秒。网络或下载失败、等待超时后续跑：
 
-需要新音轨的词级时间时，可单独安装本地对齐依赖：
+```bash
+python scripts/asr_qwen.py --run-dir runs/asr_01 --resume
+```
+
+输出包括 `alignment.json`（句、词起止时间，单位秒）、`transcript.txt` 和 `subtitles.draft.srt`。SRT 是按识别句子导出的草稿，需要按原稿修正专名、断句和长行，再用于画面。不能直接把 alignment.json 当成实例的动画 timeline.json。
+
+**实测：60.48 秒配音返回 13 个句子、131 个词条，均有时间戳。** 本次只传 `channel_id: [0]`，没有添加 `enable_words`。`Jev` 等专名仍有误识别，使用前需校对。完整参数、恢复方式和实测记录见 [Qwen ASR 接入](docs/Qwen-ASR接入.md)。
+
+如需离线处理本地文件，可选用 Whisper：
 
 ```bash
 python -m pip install -r requirements-alignment.txt
 python scripts/align_whisper.py runs/my_voice_01/master.wav --output runs/my_voice_01/alignment.json
 ```
 
-本地对齐模型首次会下载。按原稿校对识别结果、断句和实际发声，再安排字幕与动画。旧入口 `align_audio.py` 保留兼容。
+Whisper 首次会下载本地模型；旧入口 `align_audio.py` 保留兼容。新配音或剪辑后的音轨应重新定位，不能直接套用旧字幕时间。
 
 ## 项目结构
 
