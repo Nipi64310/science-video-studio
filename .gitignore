@@ -1,0 +1,25 @@
+.env
+.env.*
+!.env.example
+local_media/
+outputs/
+runs/
+.private/
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
+*.wav
+*.mp3
+*.mp4
+*.zip
+*response_private*
+*audio_url*
+*.pem
+*.key
+
+# 用户批准的成片与公开展示音轨
+!media/jev_60s.mp4
+!media/jev_3min.mp4
+!media/jev_60s.mp3
+!media/jev_3min.mp3

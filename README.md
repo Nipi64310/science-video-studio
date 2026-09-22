@@ -2,8 +2,6 @@
 
 把两次实际制作的 Jev 科普视频整理成一个可复用工程：一分钟版与三分钟版、原始创作提示词、时间轴、渲染代码、中文制作方法，以及给 Agent 使用的 Skill。
 
-这是一套已经跑通的制作流程和两份实例，不是输入任意题目就自动产出同等质量视频的万能模板。新主题仍需要重新调研、写稿与设计画面。
-
 ## 两个实例
 
 | 实例 | 时长 | 画面风格 | 内容 |
@@ -12,6 +10,32 @@
 | `jev_3min` | 188.08 秒 | 深蓝与米白交替，保留已确认的设计 | 增加三类判断、上下文分支、置信度与测试办法 |
 
 两个实例均输出 1920×1080、30fps、H.264/AAC；字幕使用实际配音时间轴。游戏为原创教学动画，并非 Jev 实测录像。
+
+## 看成片
+
+### 一分钟版 · 60 秒讲清 Jev
+
+[![播放一分钟版](media/jev_60s.jpg)](media/jev_60s.mp4)
+
+[观看 / 下载视频](media/jev_60s.mp4) · [试听配音](media/jev_60s.mp3) · [中文字幕](examples/jev_60s/subtitles.srt)
+
+### 三分钟版 · 把原理展开
+
+[![播放三分钟版](media/jev_3min.jpg)](media/jev_3min.mp4)
+
+[观看 / 下载视频](media/jev_3min.mp4) · [试听配音](media/jev_3min.mp3) · [中文字幕](examples/jev_3min/subtitles.srt)
+
+点击封面进入视频文件；GitHub 客户端若不提供内嵌播放，可以下载 MP4 观看。
+
+## 具体怎么实现
+
+1. **资料与口播**：核对官方资料，把核心问题写成自然中文，再拆成逐镜分镜。
+2. **生成声音**：Qwen-Audio-3.1-TTS-Next 根据脚本和已选定参考音生成配音。一分钟版一次生成；三分钟版采用三段声音，异常段单独重做。
+3. **对齐字幕**：用 faster-whisper 获取词级时间，再按原稿校对。字幕和动画都读取同一份时间轴。
+4. **代码画动画**：Python + Pillow 按时间绘制角色移动、选项、状态卡片、概率条和路由图，中文字体随项目提供。
+5. **合成与验收**：FFmpeg 编码 H.264/AAC，输出 1080p、30fps；检查字幕、排版、动作顺序、音量和完整解码。
+
+三分钟版还剪掉了较长的句间空白，分段调整响度，没有整体加速人声。游戏画面是原创机制演示，不是 Jev 实测录屏。
 
 ## 快速开始
 
@@ -30,20 +54,26 @@ python scripts/render.py jev_60s --still 26
 python scripts/render.py jev_3min --still 149.9
 ```
 
-输出在 `outputs/实例名/`。仓库不存放私人参考人声、生成音轨与视频；字体及其许可证随仓库提供。
+输出在 `outputs/实例名/`。仓库包含两版成片、便于试听的 MP3 音轨、封面和字体；私人参考人声不提交。
 
 ### 复现已交付的视频
 
-从此前交付的完整工程 ZIP 导入音轨：
+直接从仓库里的视频提取音轨，再渲染：
 
 ```bash
-python scripts/import_audio.py jev_60s /你的路径/jev_source.zip
-python scripts/import_audio.py jev_3min /你的路径/jev_3min_source.zip
+python scripts/prepare_demo_audio.py
 python scripts/render.py jev_60s
 python scripts/render.py jev_3min
 ```
 
-也可以把对应音轨放到 `local_media/jev_60s/master.wav`、`local_media/jev_3min/master.wav`，或传入 `--audio /路径/master.wav`。
+MP3 用于试听；默认复现从 MP4 中的音轨转成工作 WAV，不需要 API Key。若需使用最初未压缩的音频，可从此前交付的完整工程导入：
+
+```bash
+python scripts/import_audio.py jev_60s /你的路径/jev_source.zip
+python scripts/import_audio.py jev_3min /你的路径/jev_3min_source.zip
+```
+
+也可用 `--audio /路径/master.wav` 指定本地音轨。
 
 快速检查一小段：
 
@@ -91,6 +121,7 @@ examples/       两个视频的画面、口播、提示词、字幕、时间轴�
 scripts/        共用的生成、导入、转写、渲染和提交检查入口
 skills/         Agent 可读取的科普视频制作 Skill
 assets/fonts/   中文字体与原许可证
+media/          经确认的两版视频、试听音轨与封面
 docs/          中文流程、复盘和验收说明
 local_media/    本地音轨与参考音，不提交
 runs/           API 运行数据，不提交
@@ -117,6 +148,6 @@ python scripts/check_repo.py
 python -m unittest discover -s tests
 ```
 
-`.gitignore` 排除密钥配置、媒体、缓存与原始响应；检查脚本读取暂存内容，而不是只看工作目录。规则检查不是完整的秘密识别系统，推送前仍应查看 `git diff --cached --stat` 和具体变更。不要使用 `git add -f` 加回这些文件。
+`.gitignore` 排除密钥配置、私人参考音、运行缓存与原始响应；仅放行 `media/` 中明确批准的四个音视频文件；检查脚本读取暂存内容，而不是只看工作目录。规则检查不是完整的秘密识别系统，推送前仍应查看 `git diff --cached --stat` 和具体变更。不要使用 `git add -f` 加回这些文件。
 
 代码尚未指定开源许可证；字体按 `assets/fonts/LICENSE.txt` 的许可分发。是否公开仓库、是否另加代码许可证，由仓库所有者决定。
