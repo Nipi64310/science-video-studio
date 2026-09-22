@@ -1,6 +1,6 @@
 # Qwen Filetrans 转写与时间戳
 
-默认模型：`qwen-audio-3.1-asr-flash-filetrans`。与先前测试失败的 `qwen-audio-3.1-asr-flash-message` 是不同的接口路径，当前主流程已切换到实测成功的 Filetrans。
+模型：`qwen-audio-3.1-asr-flash-filetrans`。使用 Filetrans 异步接口获取转写与时间戳。
 
 ## 已验证的请求
 
@@ -46,7 +46,7 @@ python scripts/asr_qwen.py --run-dir runs/asr_01 --resume --task-id '已知任�
 - subtitles.draft.srt：按原始句段导出的字幕草稿；修正专名、分行与长句后使用。
 - summary.json：句词数量、单位及 needs_review 状态。
 
-alignment.json 与可选 Whisper 的定位结构一致，但不是 renderer 使用的动画 timeline.json。设计者仍需把动作事件关联到校对后的语义时间。音轨剪辑或拼接后应重新定位或准确映射时间。
+alignment.json 保存识别文字及时间戳，动画 timeline.json 保存画面事件。设计者仍需把动作事件关联到校对后的语义时间。音轨剪辑或拼接后应重新定位或准确映射时间。
 
 ## 2026-09-22 实测
 
@@ -59,10 +59,8 @@ alignment.json 与可选 Whisper 的定位结构一致，但不是 renderer 使�
 - 例如“最近”为 960–1280ms，“有个”为 1280–1520ms。
 - Jev 被识别成 Japh/Jave，“接进”被识别成“接近”，仍须对照原稿校正。时间戳结构检查不等于人工逐词同步验收。
 
-这是一次样本测试，不是准确率或性能基准。默认 Whisper 依赖已移出；离线备用安装 requirements-alignment.txt，调用 scripts/align_whisper.py。旧 align_audio.py 保留兼容。
+这是一次样本测试，不是准确率或性能基准。
 
-## 先前失败记录与文档差异
+## 参考文档
 
-message 模型在 multimodal-generation 接口返回 HTTP 400 / InvalidParameter / url error，包括 input_audio、通用 audio 写法和业务空间入口。不能把这个错误推广到 Filetrans。原请求 ID 示例：`5f7c475a-4e33-9288-bebd-6776ff93710e`。
-
-[官方 Qwen-ASR API 文档](https://help.aliyun.com/en/model-studio/qwen-asr-api-reference)可参考异步提交、轮询与时间戳字段；通用文档中的模型名、单数 file_url 与本次 3.1 接入示例存在差异，代码采用本次实测成功的请求。
+[官方 Qwen-ASR API 文档](https://help.aliyun.com/en/model-studio/qwen-asr-api-reference)可参考异步提交、轮询与时间戳字段。本项目采用上方已实测成功的模型名和 file_urls 请求结构。

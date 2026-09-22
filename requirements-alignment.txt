@@ -1,3 +1,0 @@
--r requirements.txt
-# 可选的本地词级对齐，不是 Qwen ASR 的依赖。
-faster-whisper>=1.1,<2

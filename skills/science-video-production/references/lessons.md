@@ -36,4 +36,4 @@
 
 ## Filetrans 与字幕
 
-3.1 的 message 接口测试返回 URL 错误，换用 filetrans 异步接口后，file_urls 数组配合 channel_id: [0] 跑通。60.48 秒实例返回 13 句、131 个词条；没有额外传 enable_words。不能把通用文档的另一模型参数直接套入。Jev 被误识别为 Japh/Jave，词级字段不是校对完成的证明。任务提交后立即保存 task_id；超时或下载失败从原任务恢复，不重复提交。
+Filetrans 异步接口使用 file_urls 数组配合 channel_id: [0]。60.48 秒实例返回 13 句、131 个词条；没有额外传 enable_words。不能把通用文档的另一模型参数直接套入。Jev 被误识别为 Japh/Jave，词级字段不是校对完成的证明。任务提交后立即保存 task_id；超时或下载失败从原任务恢复，不重复提交。

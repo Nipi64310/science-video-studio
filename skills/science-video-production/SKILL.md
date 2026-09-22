@@ -26,7 +26,7 @@ description: 制作与修改中文科技科普视频，从资料核对、自然�
 
 ## 按实际声音安排画面
 
-1. 优先用 scripts/asr_qwen.py 调用 Filetrans，读取 alignment.json 的句级、词级时间戳，校对 subtitles.draft.srt。按 docs/Qwen-ASR接入.md 处理任务恢复；失败续查、续下载，不重提任务。离线备用 scripts/align_whisper.py。对照原稿检查整句缺失、重复与无关内容，修改专名与字幕长行；不要把 ASR 时间轴直接当作动画 timeline.json。英文和同音误识别需单独判断，不盲信 ASR。
+1. 用 scripts/asr_qwen.py 调用 Filetrans，读取 alignment.json 的句级、词级时间戳，校对 subtitles.draft.srt。按 docs/Qwen-ASR接入.md 处理任务恢复；失败续查、续下载，不重提任务。对照原稿检查整句缺失、重复与无关内容，修改专名与字幕长行；不要把 ASR 时间轴直接当作动画 timeline.json。英文和同音误识别需单独判断，不盲信 ASR。
 2. 严重跑词时只重做受影响片段。API 200、时长合理、引用了同一参考音都不能代替内容验收。
 3. 新音频重新安排字幕和语义锚点；禁止用输出 token 数或全文字数平均分配字幕时间。
 4. 需要压缩时长时先删重复内容或多余空白，保留呼吸和语音边缘保护区；不要为凑时长强行拉伸或加速声音。

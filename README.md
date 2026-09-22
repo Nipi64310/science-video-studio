@@ -31,7 +31,7 @@
 
 1. **资料与口播**：核对官方资料，把核心问题写成自然中文，再拆成逐镜分镜。
 2. **生成声音**：Qwen-Audio-3.1-TTS-Next 根据脚本和已选定参考音生成配音。一分钟版一次生成；三分钟版采用三段声音，异常段单独重做。
-3. **对齐字幕**：默认使用 Qwen Filetrans 获取转写及句级、词级时间戳，再按原稿校对。两个示例制作时使用 faster-whisper 对齐，字幕和动画读取同一份时间轴。
+3. **对齐字幕**：使用 Qwen Filetrans 获取转写及句级、词级时间戳，再按原稿校对。字幕和动画读取同一份校对后的时间轴。
 4. **代码画动画**：Python + Pillow 按时间绘制角色移动、选项、状态卡片、概率条和路由图，中文字体随项目提供。
 5. **合成与验收**：FFmpeg 编码 H.264/AAC，输出 1080p、30fps；检查字幕、排版、动作顺序、音量和完整解码。
 
@@ -107,7 +107,7 @@ python scripts/tts_next.py \
 
 ### Qwen Filetrans 转写与字幕定位
 
-默认使用已实测成功的 `qwen-audio-3.1-asr-flash-filetrans`，读取同一个 `DASHSCOPE_API_KEY`，无需安装 Whisper：
+使用已实测成功的 `qwen-audio-3.1-asr-flash-filetrans`，读取同一个 `DASHSCOPE_API_KEY`，使用 Python 标准库调用：
 
 ```bash
 python scripts/asr_qwen.py \
@@ -127,14 +127,7 @@ python scripts/asr_qwen.py --run-dir runs/asr_01 --resume
 
 **实测：60.48 秒配音返回 13 个句子、131 个词条，均有时间戳。** 本次只传 `channel_id: [0]`，没有添加 `enable_words`。`Jev` 等专名仍有误识别，使用前需校对。完整参数、恢复方式和实测记录见 [Qwen ASR 接入](docs/Qwen-ASR接入.md)。
 
-如需离线处理本地文件，可选用 Whisper：
-
-```bash
-python -m pip install -r requirements-alignment.txt
-python scripts/align_whisper.py runs/my_voice_01/master.wav --output runs/my_voice_01/alignment.json
-```
-
-Whisper 首次会下载本地模型；旧入口 `align_audio.py` 保留兼容。新配音或剪辑后的音轨应重新定位，不能直接套用旧字幕时间。
+新配音或剪辑后的音轨应重新定位，不能直接套用旧字幕时间。
 
 ## 项目结构
 
